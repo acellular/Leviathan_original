@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7124112268027426817
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7124112268027426877}
+  - component: {fileID: 7124112268027426876}
+  - component: {fileID: 7124112268027426819}
+  - component: {fileID: 7124112268027426818}
+  m_Layer: 0
+  m_Name: LandUsePeas
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7124112268027426877
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7124112268027426817}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7124112268027426876
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7124112268027426817}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd335e5e834964a41b1391dfe3fd490b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &7124112268027426819
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7124112268027426817}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04d0e8e8def07b346887146ce10a149d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &7124112268027426818
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7124112268027426817}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14f80cd6b7581154db68ffdd572d4610, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  yieldBare: 0
+  yieldClay: 6
+  yieldSand: 2
+  yieldSilt: 3
+  yieldPeat: 3
+  yieldChalk: 2
+  yieldLoam: 8
+  depletionBare: 0
+  depletionClay: -0.0008
+  depletionSand: -0.0008
+  depletionSilt: -0.0005
+  depletionPeat: -0.0009
+  depletionChalk: -0.0007
+  depletionLoam: -0.0007
