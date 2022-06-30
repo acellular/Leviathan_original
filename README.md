@@ -1,7 +1,7 @@
 # Leviathan_original
 
 A simulated farming society in which settlements evolve
-according to rules in paradigms that spread in power-law patterns.
+according to mutable rules in paradigms that spread in power-law patterns.
 Most of this code dates from 2020, as a project for relearning programming
 and implementing some ideas from research into societal collapse
 and complex systems. Not well optimized,
