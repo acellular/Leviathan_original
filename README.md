@@ -7,9 +7,9 @@ and implementing some ideas from research into societal collapse
 and complex systems. Not well optimized,
 but makes for a sometimes interesting simulation.
 
-Serves as the base for a game version with procedurally generated terrain
-(using FBM noisemaps and Voronoi tessellation) and go powers,
-availible free here: https://acellular.itch.io/leviathan
+Play a game version  of this model, with procedurally generated terrain
+(using FBM noisemaps and Voronoi tessellation) and god powers,
+for free here: https://acellular.itch.io/leviathan
 
 ###LEVIATHAN-0.18d###############################################
 
