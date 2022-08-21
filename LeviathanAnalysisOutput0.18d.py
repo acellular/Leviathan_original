@@ -10,14 +10,9 @@ import numpy as np
 import math
 from scipy import stats
 
-#helper
-def truncate(number, digits) -> float:
-    stepper = 10.0 ** digits
-    return math.trunc(stepper * number) / stepper
-
 ##Print out log-log charts of the input data (used for paradigm spread)
 #largely follows from http://www.mkivela.com/binning_tutorial.html
-def logLogHistogramOut (data, title, multiplier):
+def log_log_histogram (data, title, multiplier):
 
     #set up chart
     fig = plt.figure(figsize=(6, 6))
@@ -32,8 +27,9 @@ def logLogHistogramOut (data, title, multiplier):
         bins = [np.min(data)]
         cur_value = bins[0]
     except:
-        print('ERROR creating', title, 'plot. Run the test longer or change the bin size')
+        print('ERROR creating bins for', title, 'plot. Run the test longer or try changing the bin size')
         return
+        
     while cur_value < np.max(data):
         cur_value = cur_value * multiplier
         bins.append(cur_value)
@@ -42,450 +38,277 @@ def logLogHistogramOut (data, title, multiplier):
     bins = np.array(bins)
     values, nBins, patches = plot1.hist(data, bins=bins, density=True)
     
-
-    
     #add regression line
     #NOTE!!!!---a bit HACKY when there's no data in a bin
     #just takes previous point and averages it with nothing
     #--better to change the bin size
     #or the values that regression covers
     #or simply run longer tests resulting in more data and thus less chance of empty bins
-    logBinnedX = []
+    log_binnedX = []
     for b in nBins:
-        logBinnedX.append(math.log10(b))
-    logValues = []
+        log_binnedX.append(math.log10(b))
+    log_values = []
     for i in range(len(values)):
         if values[i] != 0:
-            logValues.append(math.log10(values[i]))
+            log_values.append(math.log10(values[i]))
         else:
-            logValues.append(math.log10(values[i-1]/2))#the hacky bit
+            log_values.append(math.log10(values[i-1]/2))#the hacky bit
     #remove the first bin value (so only using the right limit of each bin)
     #and remove the last bin value so centered on what tend to be the most representative results
     #CHANGE THESE VALUES to add more specific regression lines for specific tests
-    logBinnedX = logBinnedX[2:len(logBinnedX)-1]
-    logValues = logValues[1:len(logValues)-1]
+    log_binnedX = log_binnedX[2:len(log_binnedX)-1]
+    log_values = log_values[1:len(log_values)-1]
     #now get slope of the logged values
     try:
-        slope, intercept, r_value, p_value, std_err = stats.linregress(logBinnedX, logValues)
+        slope, intercept, r_value, p_value, std_err = stats.linregress(log_binnedX, log_values)
     except:
-        print('ERROR creating', title, 'plot. Run the test longer or change the bin size')
+        print('ERROR calculating regression line on', title, 'plot. Run the test longer or try changing the bin size')
         return
     nnBins = nBins[1:len(nBins)-1]
     #in power law form the slope becomes the exponent, and 10 to the intercept becomes the scaling constant
-    plot1.plot(nnBins, (10**intercept)*nnBins**slope, 'r', label='fitted line')
+    plot1.plot(nnBins, (10**intercept)*nnBins**slope, 'r')
     
 
     #print out the chart
-    plot1.set_title('PDF, ' + title + ',\nSlope: '+ str(truncate(slope, 3)) + ' r: ' + str(truncate(r_value, 3)))
+    plot1.set_title(f'PDF, {title}\nSlope: {slope:.3f} r: {r_value:.3f}')
     plot1.set_xlim(1, nBins[len(nBins)-1])
     plot1.set_ylim(top = 1)
     fig.savefig(title + 'PDFandSlope.svg')
 
 
-
-#MAIN-------------------------------------------------------------------
-#first stuff for individual paradigms
-maxAdherents = []
-totalAdoptions = []
-monthsActive = []
-
-with open('Paradigms_Tracking.csv') as csvDataFile:
-    csvReader = csv.reader(csvDataFile)
-    first = True
-    for row in csvReader:
-        if first == False:
-            maxAdherents.append(int(row[1]))
-            row2 = int(row[2]) - 1
-            if row2 > 0:#don't count the original leviathan mutation as an "adoption"
-                totalAdoptions.append(row2)
-            #totalAdoptions.append(int(row[2])) #to include the original mutation as an adoption
-            monthsActive.append(int(row[3]))
-        else:
-            first = False
-
-logLogHistogramOut(maxAdherents, 'Max Followers', 2)
-logLogHistogramOut(totalAdoptions, 'Total Adoptions', 2)
-logLogHistogramOut(monthsActive, 'Months Active', 2)
-
-################################################################
-#WEEKLY
-#population!
-weeks = []
-population = []
-yields = []
-costs = []
-
-with open('Population_Tracking.csv') as csvDataFile:
-    csvReader1 = csv.reader(csvDataFile)
-    first = True
-    for row in csvReader1:
-        if not (row):    
-            continue
-        if first == False:
-            weeks.append(int(row[0]))
-            population.append(int(row[1]))
-            yields.append(float(row[2]))
-            costs.append(float(row[3]))
-        else:
-            first = False
-
-fig = plt.figure(figsize=(14,30))
-plot1 = fig.add_subplot(911)
-plot1.grid(b=None, which='both', axis='x')
-plot1.plot(weeks, population)
-plot1.set_xlim(np.min(weeks), np.max(weeks))
-plot1.set_ylim(0)
-plot1.set_title('Population and Yields')
-plot1.set_xlabel('Week')
-plot1.set_ylabel('Total Population of all Leviathans', color = 'C0')
-[i.set_color("C0") for i in plot1.get_yticklabels()]
-
-#yields
-plo1ax2 = plot1.twinx()
-plo1ax2.plot(weeks, yields, 'r')
-plo1ax2.set_ylim(0, np.max(yields)*1.5)
-plo1ax2.set_ylabel('Total Yield of all Leviathans', color = 'r')
-[i.set_color("red") for i in plo1ax2.get_yticklabels()]
-
-#costs vs benefits
-plot1.plot(weeks, costs, 'g')
-fig2 = plt.figure(figsize=(11,5.5))
-plot21 = fig2.add_subplot(121)
-weeks2 = np.array(weeks)*(1/len(weeks))
-c = np.tan(weeks2)
-
-plot21.set_title('Cost-Benefit "Seneca" Curve')
-plot21.set_xlabel('Paradigm Costs')
-plot21.set_ylabel('Yields')
-plot21.scatter(costs[10::5], yields[10::5], c=c[10::5], marker='.')
-
-plot22 = fig2.add_subplot(122)
-plot22.set_title('Costs vs Benefits')
-plot22.set_xlabel('Paradigm Rule Costs')
-plot22.set_ylabel('Population')
-plot22.scatter(costs[10::5], population[10::5], c=c[10::5], marker='.')
-
-fig2.tight_layout(pad=2, w_pad=2, h_pad=0)
-fig2.savefig('CostBenefitCurve.png')
+def add_plot(fig, subplot, x, y, x_label, y_label, title):
+    plot = fig.add_subplot(subplot)
+    plot.grid(b=None, which='both', axis='x')
+    plot.plot(x, y)
+    plot.set_xlim(np.min(x), np.max(x))
+    plot.set_ylim(0, np.max(y)*1.1)
+    plot.set_title(title)
+    plot.set_xlabel(x_label)
+    plot.set_ylabel(y_label, color = 'C0')
+    for i in plot.get_yticklabels(): i.set_color("C0")
+    return plot
 
 
+def add_axis(plot, x, y, y_label, y_lim_mod=1.05):
+    axis = plot.twinx()
+    axis.plot(x, y, 'r')
+    axis.set_ylim(0, np.max(y)*y_lim_mod)
+    axis.set_ylabel(y_label, color = 'r')
+    for i in axis.get_yticklabels(): i.set_color("red")
+    return axis
 
 
-############################################################################
-#MONTHLY
-#number of adoptions or mutations (paradigm shifts)
-months = []
-totalParaChange = []
-with open('Change_Tracking.csv') as csvDataFile:
-    csvReader2 = csv.reader(csvDataFile)
-    first = True
-    for row in csvReader2:
-        if not (row):    
-            continue
-        if first == False:
-            months.append(int(row[0]))
-            totalParaChange.append(int(row[3]))
-        else:
-            first = False
+# collect data and create charts
+# TODO additional refacoring in tandem with CSV output from main Unity program
+# (no reason anymore to have seperate CSVs or plotting calls)
+if __name__ == "__main__":
 
-plot2 = fig.add_subplot(912)
-plot2.grid(b=None, which='both', axis='x')
-plot2.plot(months, totalParaChange)
-plot2.set_xlim(np.min(months), np.max(months))
-plot2.set_ylim(0)
-plot2.set_title('Paradigm Shifts')
-plot2.set_xlabel('Month')
-plot2.set_ylabel('Number of Paradigm\nAdoptions and Mutations', color = 'C0')
-[i.set_color("C0") for i in plot2.get_yticklabels()]
+    # POWER LAW analysis of paradigm spread
+    max_adherents = []
+    total_adoptions = []
+    months_active = []
 
-#yieldMultiplier
-months = []
-totalYieldChange = []
-with open('Yield_Multiplier.csv') as csvDataFile:
-    csvReader2 = csv.reader(csvDataFile)
-    first = True
-    for row in csvReader2:
-        if not (row):    
-            continue
-        if first == False:
-            #if int(row[0]) % 4 == 0:
-                months.append(int(row[0])/4)
-                totalYieldChange.append(float(row[1]))
-        else:
-            first = False
+    with open('Paradigms_Tracking.csv') as csv_file:
+        csv_reader = csv.reader(csv_file)
+        first = True
+        for row in csv_reader:
+            if first == False:
+                max_adherents.append(int(row[1]))
+                row2 = int(row[2]) - 1
+                if row2 > 0:#don't count the original leviathan mutation as an "adoption"
+                    total_adoptions.append(row2)
+                #totalAdoptions.append(int(row[2])) #to include the original mutation as an adoption
+                months_active.append(int(row[3]))
+            else:
+                first = False
 
-plo2ax2 = plot2.twinx()
-plo2ax2.plot(months, totalYieldChange, 'r')
-plo2ax2.set_ylim(8, 16)
-plo2ax2.set_ylabel('Yield Multiplier', color = 'r')
-[i.set_color("red") for i in plo2ax2.get_yticklabels()]
+    log_log_histogram(max_adherents, 'Max Followers', 2)
+    log_log_histogram(total_adoptions, 'Total Adoptions', 2)
+    log_log_histogram(months_active, 'Months Active', 2)
 
 
+    #### SYSTEM EVOLUTION CHARTS (i.e. population, yields, number of paradigms, average num rules per leviathan)
+    fig = plt.figure(figsize=(14,30))
 
-#largest paradigm and number of paradigms at any one time
-largestPara = []
-numPara = []
-with open('Paradigm_Sizes.csv') as csvDataFile:
-    csvReader2 = csv.reader(csvDataFile)
-    first = True
-    for row in csvReader2:
-        if not (row):    
-            continue
-        if first == False:
-            #if int(row[0]) % 4 == 0:
-                #months.append(int(row[0])/4)
-                largestPara.append(int(row[1]))
-                numPara.append(int(row[2]))
-        else:
-            first = False
+    ################################################################
+    #WEEKLY
+    #population!
+    weeks = []
+    population = []
+    yields = []
+    costs = []
 
+    with open('Population_Tracking.csv') as csv_file:
+        csv_reader = csv.reader(csv_file)
+        next(csv_reader , None)  # skip the header
+        for row in csv_reader:
+            if row:
+                weeks.append(int(row[0]))
+                population.append(int(row[1]))
+                yields.append(float(row[2]))
+                costs.append(float(row[3]))
 
-#plot largest para
-plot3 = fig.add_subplot(913)
-plot3.grid(b=None, which='both', axis='x')
-plot3.plot(months, numPara)
-plot3.set_xlim(np.min(months), np.max(months))
-plot3.set_ylim(0)
-plot3.set_title('Active Paradigms and Largest Paradigm')
-plot3.set_xlabel('Month')
-plot3.set_ylabel('Number of Active Paradigms', color = 'C0')
-[i.set_color("C0") for i in plot3.get_yticklabels()]
-
-#plot num para
-plo3ax2 = plot3.twinx() 
-plo3ax2.plot(months, largestPara, 'r')
-plo3ax2.set_ylim(0)
-plo3ax2.set_ylabel('Most Followers of any Paradigm', color = 'r')
-[i.set_color("red") for i in plo3ax2.get_yticklabels()]
+    plot1 = add_plot(fig, 911, weeks, population, 'Week', 'Total Population of all Leviathans', 'Population and Yields')
+    add_axis(plot1, weeks, yields, 'Total Yield of all Leviathans', y_lim_mod=1.5)
 
 
+    #### EXTRA for costs vs benefits
+    plot1.plot(weeks, costs, 'g')
+    fig2 = plt.figure(figsize=(11,5.5))
+    plot21 = fig2.add_subplot(121)
+    weeks2 = np.array(weeks)*(1/len(weeks))
+    c = np.tan(weeks2)
 
-#-----average # of rules, average birth rate
-avNumRules = []
-avBirthRate = []
-numGiveSurplus = []
-with open('Rates_Tracking.csv') as csvDataFile:
-    csvReader2 = csv.reader(csvDataFile)
-    first = True
-    for row in csvReader2:
-        if not (row):    
-            continue
-        if first == False:
-                avNumRules.append(float(row[1]))
-                avBirthRate.append(float(row[2]))
-        else:
-            first = False
+    plot21.set_title('Cost-Benefit "Seneca" Curve')
+    plot21.set_xlabel('Paradigm Costs')
+    plot21.set_ylabel('Yields')
+    plot21.scatter(costs[10::5], yields[10::5], c=c[10::5], marker='.')
 
-#plot average brith rate
-plot4 = fig.add_subplot(914)
-plot4.grid(b=None, which='both', axis='x')
-plot4.plot(months, avBirthRate)
-plot4.set_xlim(np.min(months), np.max(months))
-plot4.set_ylim(0)
-plot4.set_title('Birth rates and Influence Radius')
-plot4.set_xlabel('Month')
-plot4.set_ylabel('Average Birth Rate', color = 'C0')
-[i.set_color("C0") for i in plot4.get_yticklabels()]
+    plot22 = fig2.add_subplot(122)
+    plot22.set_title('Costs vs Benefits')
+    plot22.set_xlabel('Paradigm Rule Costs')
+    plot22.set_ylabel('Population')
+    plot22.scatter(costs[10::5], population[10::5], c=c[10::5], marker='.')
 
-#plot avergage # of rules
-plot5 = fig.add_subplot(915)
-plot5.grid(b=None, which='both', axis='x')
-plot5.plot(months, avNumRules)
-plot5.set_xlim(np.min(months), np.max(months))
-plot5.set_ylim(0)
-plot5.set_title('Number of Rules and Average Threshold')
-plot5.set_xlabel('Month')
-plot5.set_ylabel('Average Number of Rules by Leviathan', color = 'C0')
-[i.set_color("C0") for i in plot5.get_yticklabels()]
+    fig2.tight_layout(pad=2, w_pad=2, h_pad=0)
+    fig2.savefig('CostBenefitCurve.png')
 
 
-#--------avAdoptionRate, avMutationDivider, avThreshold
-avAdoptionRate = []
-avMutationDivider = []
-avThreshold = []
-with open('MutationRates_Tracking.csv') as csvDataFile:
-    csvReader2 = csv.reader(csvDataFile)
-    first = True
-    for row in csvReader2:
-        if not (row):    
-            continue
-        if first == False:
-                avAdoptionRate.append(float(row[1]))
-                avMutationDivider.append(float(row[2]))
-                avThreshold.append(float(row[3]))
-        else:
-            first = False
+    ############################################################################
+    #MONTHLY
+    #number of adoptions or mutations (paradigm shifts)
+    months = []
+    total_para_change = []
 
-#plot average threshold
-plo5ax2 = plot5.twinx()
-plo5ax2.plot(months, avThreshold, 'r')
-plo5ax2.set_ylim(0)
-plo5ax2.set_ylabel('Average Threshold by leviathan', color = 'r')
-[i.set_color("red") for i in plo5ax2.get_yticklabels()]
+    with open('Change_Tracking.csv') as csv_file:
+        csv_reader = csv.reader(csv_file)
+        next(csv_reader , None)  # skip the header
+        for row in csv_reader:
+            if row:
+                months.append(int(row[0]))
+                total_para_change.append(int(row[3]))
 
-#plot average adoption threshold
-plot6 = fig.add_subplot(916)
-plot6.grid(b=None, which='both', axis='x')
-plot6.plot(months, avAdoptionRate)
-plot6.set_xlim(np.min(months), np.max(months))
-plot6.set_ylim(0)
-plot6.set_title('Adoption Threshold and Mutation Rate')
-plot6.set_xlabel('Month')
-plot6.set_ylabel('Average Adoption Threshold by Leviathan', color = 'C0')
-[i.set_color("C0") for i in plot6.get_yticklabels()]
+    #yieldMultiplier
+    yield_mult = []
+    with open('Yield_Multiplier.csv') as csv_file:
+        csv_reader = csv.reader(csv_file)
+        next(csv_reader , None)  # skip the header
+        for row in csv_reader:
+            if row:
+                yield_mult.append(float(row[1]))
 
-#plot average mutation rate
-plo6ax2 = plot6.twinx()
-plo6ax2.plot(months, avMutationDivider, 'r')
-plo6ax2.set_ylim(0)
-plo6ax2.set_ylabel('Average Mutation Rate by Leviathan', color = 'r')
-[i.set_color("red") for i in plo6ax2.get_yticklabels()]
+    plot2 = add_plot(fig, 912, months, total_para_change, 'Month', 'Number of Paradigm\nAdoptions and Mutations', 'Paradigm Shifts')
+    add_axis(plot2, months, yield_mult, 'Yield Multiplier', y_lim_mod=1.5)
 
 
+    #largest paradigm and number of paradigms at any one time
+    largest_para = []
+    num_para = []
+    with open('Paradigm_Sizes.csv') as csv_file:
+        csv_reader = csv.reader(csv_file)
+        next(csv_reader , None)  # skip the header
+        for row in csv_reader:
+            if row:
+                largest_para.append(int(row[1]))
+                num_para.append(int(row[2]))
 
-#------average birthCom, deathCom, emmiCom, sensitivity, and influence
-avBirthCom = []
-avDeathCom = []
-avEmmiCom = []
-avSensitivity = []
-avInfluence = []
-with open('Sensitivity_Tracking.csv') as csvDataFile:
-    csvReader2 = csv.reader(csvDataFile)
-    first = True
-    for row in csvReader2:
-        if not (row):    
-            continue
-        if first == False:
-                avBirthCom.append(float(row[1]))
-                avDeathCom.append(float(row[2]))
-                avEmmiCom.append(float(row[3]))
-                avSensitivity.append(float(row[4]))
-                avInfluence.append(float(row[5]))
-        else:
-            first = False
-
-#plot avergage birthCom
-plot7 = fig.add_subplot(917)
-plot7.grid(b=None, which='both', axis='x')
-plot7.plot(months, avBirthCom)
-plot7.set_xlim(np.min(months), np.max(months))
-plot7.set_ylim(0)
-plot7.set_title('BirthCom and DeathCom')
-plot7.set_xlabel('Month')
-plot7.set_ylabel('Average BirthCom by Leviathan', color = 'C0')
-[i.set_color("C0") for i in plot7.get_yticklabels()]
-
-#plot average deathCom
-plo7ax2 = plot7.twinx()
-plo7ax2.plot(months, avDeathCom, 'r')
-plo7ax2.set_ylim(0, -50)
-plo7ax2.set_ylabel('Average DeathCom by Leviathan', color = 'r')
-[i.set_color("red") for i in plo7ax2.get_yticklabels()]
-
-#plot average emmiCom
-plot8 = fig.add_subplot(918)
-plot8.grid(b=None, which='both', axis='x')
-plot8.plot(months, avEmmiCom)
-plot8.set_xlim(np.min(months), np.max(months))
-plot8.set_ylim(0)
-plot8.set_title('EmmiCom and Overal Sensitivity')
-plot8.set_xlabel('Month')
-plot8.set_ylabel('Average EmmiCom by Leviathan', color = 'C0')
-[i.set_color("C0") for i in plot8.get_yticklabels()]
-
-#plot average sensitivity
-plo8ax2 = plot8.twinx()
-plo8ax2.plot(months, avSensitivity, 'r')
-plo8ax2.set_ylim(0)
-plo8ax2.set_ylabel('Average Sensitivity by Leviathan', color = 'r')
-[i.set_color("red") for i in plo8ax2.get_yticklabels()]
-
-#plot average influence (on same chart as birth rates because space)
-plo4ax2 = plot4.twinx()
-plo4ax2.plot(months, avInfluence, 'r')
-plo4ax2.set_ylim(0)
-plo4ax2.set_ylabel('Average Influence Radius', color = 'r')
-[i.set_color("red") for i in plo4ax2.get_yticklabels()]
+    plot3 = add_plot(fig, 913, months, largest_para, 'Month', 'Most Followers of any Paradigm', 'Active Paradigms and Largest Paradigm')
+    add_axis(plot3, months, num_para, 'Number of Active Paradigms')
 
 
+    #-----average # of rules, average birth rate
+    avg_num_rules = []
+    avg_birth_rate = []
+    with open('Rates_Tracking.csv') as csv_file:
+        csv_reader = csv.reader(csv_file)
+        next(csv_reader , None)  # skip the header
+        for row in csv_reader:
+            if row:
+                avg_num_rules.append(float(row[1]))
+                avg_birth_rate.append(float(row[2]))
 
-#AND now Average comfort and expectedResults
-avComfort = []
-avExpects = []
-avEmProb = []
-avStorage = []
-avWorkRate = []
-with open('ComfortExpects_Tracking.csv') as csvDataFile:
-    csvReader2 = csv.reader(csvDataFile)
-    first = True
-    for row in csvReader2:
-        if not (row):    
-            continue
-        if first == False:
-                avComfort.append(float(row[1]))
-                avExpects.append(float(row[2]))
-                avEmProb.append(float(row[3]))
-                avStorage.append(float(row[4]))
-                avWorkRate.append(float(row[5]))
-        else:
-            first = False
-
-#plot avergage comfortableness
-plot9 = fig.add_subplot(919)
-plot9.grid(b=None, which='both', axis='x')
-plot9.plot(months, avComfort)
-plot9.set_xlim(np.min(months), np.max(months))
-plot9.set_ylim(0, 100)
-plot9.set_title('Comfort and Expectations')
-plot9.set_xlabel('Month')
-plot9.set_ylabel('Average Comfort by Leviathan', color = 'C0')
-[i.set_color("C0") for i in plot9.get_yticklabels()]
-
-#plot average expectedResults
-plo9ax2 = plot9.twinx()
-plo9ax2.plot(months, avExpects, 'r')
-plo9ax2.set_ylim(0)
-plo9ax2.set_ylabel('Average Expectations by Leviathan', color = 'r')
-[i.set_color("red") for i in plo9ax2.get_yticklabels()]
-
-#plot avergage emProb
-fig3 = plt.figure(figsize=(14,6))
-plot10 = fig3.add_subplot(211)
-plot10.grid(b=None, which='both', axis='x')
-plot10.plot(months, avEmProb)
-plot10.set_xlim(np.min(months), np.max(months))
-plot10.set_ylim(0)
-plot10.set_title('EmProb and Storage')
-plot10.set_xlabel('Month')
-plot10.set_ylabel('Average EmProb', color = 'C0')
-[i.set_color("C0") for i in plot10.get_yticklabels()]
-
-#plot average storagewant
-plo10ax2 = plot10.twinx()
-plo10ax2.plot(months, avStorage, 'r')
-plo10ax2.set_ylim(0)
-plo10ax2.set_ylabel('Average Storage Want', color = 'r')
-[i.set_color("red") for i in plo10ax2.get_yticklabels()]
+    plot4 = add_plot(fig, 914, months, avg_birth_rate, 'Month', 'Average Birth Rate', 'Birth rates and Influence Radius')
+    plot5 = add_plot(fig, 915, months, avg_num_rules, 'Month', 'Average Number of Rules by Leviathan', 'Number of Rules and Average Threshold')
 
 
-#plot avergage work rate
-plot11 = fig3.add_subplot(212)
-plot11.grid(b=None, which='both', axis='x')
-plot11.plot(months, avWorkRate)
-plot11.set_xlim(np.min(months), np.max(months))
-plot11.set_ylim(0)
-plot11.set_title('Work rate')
-plot11.set_xlabel('Month')
-plot11.set_ylabel('Average Work Rate', color = 'C0')
-[i.set_color("C0") for i in plot11.get_yticklabels()]
-fig3.tight_layout()
-fig3.savefig('EMPROBANDSTORAGE.svg')
+    #------average adoption threshold, mutation rate, and base threshold
+    avg_adopt_thresh = []
+    avg_mut_rate = []
+    avg_thresh = []
+    with open('MutationRates_Tracking.csv') as csv_file:
+        csv_reader = csv.reader(csv_file)
+        next(csv_reader , None)  # skip the header
+        for row in csv_reader:
+            if row:
+                avg_adopt_thresh.append(float(row[1]))
+                avg_mut_rate.append(float(row[2]))
+                avg_thresh.append(float(row[3]))
+
+    add_axis(plot5, months, avg_thresh, 'Average Threshold by leviathan')
+    plot6 = add_plot(fig, 916, months, avg_adopt_thresh, 'Month', 'Average Adoption Threshold by Leviathan', 'Adoption Threshold and Mutation Rate')
+    add_axis(plot6, months, avg_mut_rate, 'Average Mutation Rate by Leviathan')
 
 
+    #-----average comfor influence from births, deaths, emmigation, plus sensitivity, and influence
+    # approximately where CSVs started getting real messy
+    avg_birth_comfort = []
+    avg_death_comfort = []
+    avg_emmigration_comfort = []
+    avg_sensitivity = []
+    avg_influence = []
+    with open('Sensitivity_Tracking.csv') as csv_file:
+        csv_reader = csv.reader(csv_file)
+        next(csv_reader , None)  # skip the header
+        for row in csv_reader:
+            if row:
+                avg_birth_comfort.append(float(row[1]))
+                avg_death_comfort.append(float(row[2]))
+                avg_emmigration_comfort.append(float(row[3]))
+                avg_sensitivity.append(float(row[4]))
+                avg_influence.append(float(row[5]))
 
-#########################################################################
-#SAVE
-fig.tight_layout()
-fig.savefig('PopulationandParaidmgChange.svg')
-print ('COMPLETE!')
+    plot7 = add_plot(fig, 917, months, avg_birth_comfort, 'Month', 'Average BirthCom by Leviathan', 'BirthCom and DeathCom')
+    axis7b = add_axis(plot7, months, avg_death_comfort, 'Average DeathCom by Leviathan')
+    axis7b.set_ylim(np.min(avg_death_comfort)-5, 0)
 
+    plot8 = add_plot(fig, 918, months, avg_emmigration_comfort, 'Month', 'Average EmmiCom by Leviathan', 'EmmiCom and Overal Sensitivity')
+    add_axis(plot8, months, avg_sensitivity, 'Average Sensitivity by Leviathan')
+
+    add_axis(plot4, months, avg_influence, 'Average Influence Radius')
+
+
+    #AND now Average comfort and expectedResults and MORE!
+    avg_comfort = []
+    avg_expects = []
+    avg_emProb = []
+    avg_storage = []
+    avg_workRate = []
+    with open('ComfortExpects_Tracking.csv') as csv_file:
+        csv_reader = csv.reader(csv_file)
+        next(csv_reader , None)  # skip the header
+        for row in csv_reader:
+            if row:
+                avg_comfort.append(float(row[1]))
+                avg_expects.append(float(row[2]))
+                avg_emProb.append(float(row[3]))
+                avg_storage.append(float(row[4]))
+                avg_workRate.append(float(row[5]))
+
+    plot9 = add_plot(fig, 919, months, avg_comfort, 'Month', 'Average Comfort by Leviathan', 'Comfort and Expectations')
+    add_axis(plot9, months, avg_expects, 'Average Expectations by Leviathan')
+
+    #### extra chart for emProb, storage and work rate
+    fig3 = plt.figure(figsize=(14,6))
+    plot10 = add_plot(fig3, 211, months, avg_emProb, 'Month', 'Average EmProb', 'EmProb and Storage')
+    add_axis(plot10, months, avg_storage, 'Average Storage Want')
+
+    plot11 = add_plot(fig3, 212, months, avg_workRate, 'Month', 'Average Work rate', 'Work Rate')
+
+    
+    #####-------SAVE----------
+    fig.tight_layout()
+    fig.savefig('evolution_charts.svg')
+    fig3.tight_layout()
+    fig3.savefig('evolution_charts_additional.svg')
+
+    print ('COMPLETE!')
